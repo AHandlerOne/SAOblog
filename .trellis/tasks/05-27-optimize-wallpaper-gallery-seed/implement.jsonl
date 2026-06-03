@@ -1,0 +1,4 @@
+{"path":"packages/server/prisma/seed.ts","reason":"Primary implementation target for wallpaper seed replacement"}
+{"path":"packages/server/prisma/schema.prisma","reason":"Wallpaper model contract"}
+{"path":"packages/web/src/pages/gallery/GalleryPage.vue","reason":"Frontend consumer contract for wallpaper fields"}
+{"path":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Cross-layer data flow checklist"}

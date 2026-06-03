@@ -1,0 +1,57 @@
+#ai skills
+.claude/
+.codex/
+.cursor/
+.gemini/
+
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+deplay/
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Uploads
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Prisma
+packages/server/prisma/migrations/
+
+# Docker
+docker-compose.override.yml
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Large deployment files
+deploy/*.tar
+deploy/*.gz

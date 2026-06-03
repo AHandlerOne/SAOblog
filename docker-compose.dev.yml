@@ -1,0 +1,86 @@
+# Development override - only infrastructure services
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  postgres:
+    build: {}
+    image: postgres:16-alpine
+    container_name: sao-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sao
+      POSTGRES_PASSWORD: sao123
+      POSTGRES_DB: sao_blog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+      - ./packages/server/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sao -d sao_blog"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sao-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: sao-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - sao-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: sao-minio-dev
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data-dev:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sao-network
+
+  # Disable server and web in dev mode - run locally with pnpm dev
+  server:
+    profiles:
+      - production
+  web:
+    profiles:
+      - production
+
+volumes:
+  postgres-data-dev:
+    driver: local
+  redis-data-dev:
+    driver: local
+  minio-data-dev:
+    driver: local
+
+networks:
+  sao-network:
+    driver: bridge

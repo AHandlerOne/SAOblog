@@ -1,0 +1,4 @@
+{"path":"packages/server/prisma/seed.ts","reason":"Verify wallpaper dataset count, fields, and seed behavior"}
+{"path":"packages/server/prisma/schema.prisma","reason":"Verify no schema change is required"}
+{"path":"packages/web/src/pages/gallery/GalleryPage.vue","reason":"Verify frontend contract remains compatible"}
+{"path":".agents/skills/project-docker-guard/SKILL.md","reason":"Required final Docker deployability checks"}

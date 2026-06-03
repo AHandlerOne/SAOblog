@@ -1,0 +1,27 @@
+{
+  "name": "sao-blog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sword Art Online themed creative blog",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:web": "pnpm --filter @sao/web dev",
+    "dev:server": "pnpm --filter @sao/server dev",
+    "build": "pnpm --filter @sao/shared build && pnpm --filter @sao/server build && pnpm --filter @sao/web build",
+    "db:generate": "pnpm --filter @sao/server db:generate",
+    "db:migrate": "pnpm --filter @sao/server db:migrate",
+    "db:seed": "pnpm --filter @sao/server db:seed",
+    "db:push": "pnpm --filter @sao/server db:push"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "dotenv": "^16.6.1"
+  }
+}

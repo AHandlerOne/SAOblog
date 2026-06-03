@@ -1,0 +1,488 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== User =====
+
+model User {
+  id          String      @id @default(uuid())
+  email       String      @unique
+  passwordHash String
+  nickname    String
+  avatar      String?
+  bio         String?
+  role        UserRole    @default(USER)
+  isBanned    Boolean     @default(false)
+  aiAccess    Boolean     @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  works         Work[]
+  likes         Like[]
+  favorites     Favorite[]
+  comments      Comment[]
+  reports       Report[]     @relation("ReporterReports")
+  handledReports Report[]    @relation("HandledReports")
+  sessions      Session[]
+  banRecords    BanRecord[]  @relation("UserBanned")
+  banActions    BanRecord[]  @relation("BanActions")
+  unbannedUsers BanRecord[]  @relation("BanUnactions")
+  followers     Follow[]     @relation("UserFollowers")
+  following     Follow[]     @relation("UserFollowing")
+  uploadRecords UploadRecord[]
+  commentReactions CommentReaction[]
+  interactionStat UserInteractionStat?
+  interactionTrends UserInteractionTrend[]
+  notifications Notification[] @relation("UserNotifications")
+  triggeredNotifications Notification[] @relation("NotificationActors")
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+// ===== Follow =====
+
+model Follow {
+  followerId  String @db.VarChar(36)
+  followingId String @db.VarChar(36)
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+// ===== Arc (Story Arc) =====
+
+model Arc {
+  id         Int       @id @default(autoincrement())
+  name       String
+  nameJa     String
+  nameEn     String
+  season     String?
+  sortOrder  Int
+  synopsis   String?
+  coverImage String?
+  createdAt  DateTime  @default(now())
+
+  chapters   StoryChapter[]
+  characters CharacterArc[]
+  wallpapers Wallpaper[]
+
+  @@map("arcs")
+}
+
+// ===== Story Chapter =====
+
+model StoryChapter {
+  id            Int      @id @default(autoincrement())
+  arcId         Int
+  title         String
+  content       String   @db.Text
+  chapterNumber Int
+  isSpoiler     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  arc Arc @relation(fields: [arcId], references: [id], onDelete: Cascade)
+
+  @@map("story_chapters")
+}
+
+// ===== Character =====
+
+model Character {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameJa      String
+  nameEn      String
+  cv          String?
+  avatar      String
+  description String   @db.Text
+  weapon      String?
+  affiliation String?
+  createdAt   DateTime @default(now())
+
+  arcs        CharacterArc[]
+  wallpapers  Wallpaper[]
+
+  @@map("characters")
+}
+
+// ===== Character Arc (join table) =====
+
+model CharacterArc {
+  characterId Int
+  arcId       Int
+  role        String?
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  arc       Arc       @relation(fields: [arcId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, arcId])
+  @@map("character_arcs")
+}
+
+// ===== Wallpaper =====
+
+model Wallpaper {
+  id          Int      @id @default(autoincrement())
+  title       String
+  characterId Int?
+  arcId       Int?
+  imageUrl    String
+  resolution  String?
+  sourceUrl   String?
+  tags        String[]
+  createdAt   DateTime @default(now())
+
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  arc       Arc?       @relation(fields: [arcId], references: [id], onDelete: SetNull)
+
+  @@map("wallpapers")
+}
+
+// ===== News =====
+
+model News {
+  id          Int           @id @default(autoincrement())
+  title       String
+  content     String        @db.Text
+  category    NewsCategory
+  coverImage  String?
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@map("news")
+}
+
+enum NewsCategory {
+  ANIME
+  MOVIE
+  GAME
+  AUTHOR
+  MERCHANDISE
+  OTHER
+}
+
+// ===== Work (User-created content) =====
+
+model Work {
+  id           String          @id @default(uuid())
+  authorId     String
+  type         WorkType
+  title        String
+  description  String?
+  content      String?         @db.Text
+  coverImage   String?
+  tags         String[]
+  status       WorkStatus      @default(DRAFT)
+  visibility   WorkVisibility  @default(VISIBLE)
+  rejectReason String?
+  viewCount    Int             @default(0)
+  likeCount    Int             @default(0)
+  favoriteCount Int            @default(0)
+  editCount    Int             @default(0)
+  draftSizeBytes Int           @default(0)
+  deletedAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  author       User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  images       WorkImage[]
+  likes        Like[]
+  favorites    Favorite[]
+  comments     Comment[]
+  novelChapters NovelChapter[]
+  notifications Notification[]
+
+  @@map("works")
+}
+
+enum WorkType {
+  ILLUSTRATION
+  NOVEL
+  OTHER
+}
+
+enum WorkStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum WorkVisibility {
+  VISIBLE
+  HIDDEN_BY_BAN
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  FAVORITE
+}
+
+enum InteractionTrendPeriod {
+  WEEK
+  MONTH
+}
+
+model UserInteractionStat {
+  userId                String   @id
+  followerCount         Int      @default(0)
+  receivedLikeCount     Int      @default(0)
+  receivedFavoriteCount Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_interaction_stats")
+}
+
+model UserInteractionTrend {
+  id                    String                 @id @default(uuid())
+  userId                String
+  period                InteractionTrendPeriod
+  periodStart           DateTime
+  followerDelta         Int                    @default(0)
+  receivedLikeDelta     Int                    @default(0)
+  receivedFavoriteDelta Int                    @default(0)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period, periodStart])
+  @@map("user_interaction_trends")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  actorId   String
+  type      NotificationType
+  workId    String?
+  isRead    Boolean          @default(false)
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user  User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("NotificationActors", fields: [actorId], references: [id], onDelete: Cascade)
+  work  Work? @relation(fields: [workId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, type, createdAt])
+  @@map("notifications")
+}
+
+// ===== Work Image =====
+
+model WorkImage {
+  id         Int    @id @default(autoincrement())
+  workId     String
+  imageUrl   String
+  sortOrder  Int
+
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@map("work_images")
+}
+
+// ===== Novel Chapter =====
+
+model NovelChapter {
+  id            Int       @id @default(autoincrement())
+  workId        String
+  title         String
+  content       String    @db.Text
+  wordCount     Int       @default(0)
+  chapterNumber Int
+  publishedAt   DateTime?
+
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@map("novel_chapters")
+}
+
+// ===== Like =====
+
+model Like {
+  userId String
+  workId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, workId])
+  @@map("likes")
+}
+
+// ===== Favorite =====
+
+model Favorite {
+  userId String
+  workId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workId])
+  @@map("favorites")
+}
+
+// ===== Comment =====
+
+model Comment {
+  id        String    @id @default(uuid())
+  workId    String
+  authorId  String
+  content   String    @db.Text
+  parentId  String?
+  deletedAt DateTime?
+  likeCount Int       @default(0)
+  dislikeCount Int    @default(0)
+  createdAt DateTime  @default(now())
+
+  work      Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Restrict)
+  replies   Comment[] @relation("CommentReplies")
+  reactions CommentReaction[]
+
+  @@map("comments")
+}
+
+// ===== Comment Reaction =====
+
+model CommentReaction {
+  userId    String
+  commentId String
+  type      CommentReactionType
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@map("comment_reactions")
+}
+
+enum CommentReactionType {
+  LIKE
+  DISLIKE
+}
+
+// ===== Report =====
+
+model Report {
+  id          Int             @id @default(autoincrement())
+  reporterId  String
+  targetType  ReportTargetType
+  targetId    String
+  reason      String
+  description String?
+  status      ReportStatus    @default(PENDING)
+  handledById String?
+  createdAt   DateTime        @default(now())
+  resolvedAt  DateTime?
+
+  reporter User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Restrict)
+  handledBy User?   @relation("HandledReports", fields: [handledById], references: [id], onDelete: SetNull)
+
+  // Note: targetId is polymorphic (WORK/COMMENT/USER), so no direct FK here.
+  // The comment relation is optional and only valid when targetType = COMMENT.
+
+  @@map("reports")
+}
+
+enum ReportTargetType {
+  WORK
+  COMMENT
+  USER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// ===== Session (JWT rotation) =====
+
+model Session {
+  id          String    @id @default(uuid())
+  userId      String
+  currentJti  String
+  tokenFamily String
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ===== Ban Record =====
+
+model BanRecord {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  reason      String    @db.Text
+  bannedById  String
+  createdAt   DateTime  @default(now())
+  unbannedAt  DateTime?
+  unbannedById String?
+
+  user       User  @relation("UserBanned", fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy   User  @relation("BanActions", fields: [bannedById], references: [id], onDelete: Restrict)
+  unbannedBy User? @relation("BanUnactions", fields: [unbannedById], references: [id], onDelete: SetNull)
+
+  @@map("ban_records")
+}
+
+// ===== Upload Record =====
+
+model UploadRecord {
+  id               Int            @id @default(autoincrement())
+  userId           String
+  originalFilename String
+  filename         String
+  mimeType         String
+  size             Int
+  status           UploadStatus   @default(UPLOADED)
+  url              String?
+  thumbnailUrl     String?
+  width            Int?
+  height           Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("upload_records")
+}
+
+enum UploadStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}

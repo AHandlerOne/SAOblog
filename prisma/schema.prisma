@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== User =====
+
+model User {
+  id          String      @id @default(uuid())
+  email       String      @unique
+  passwordHash String
+  nickname    String
+  avatar      String?
+  bio         String?
+  role        String      @default("USER")
+  isBanned    Boolean     @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  works         Work[]
+  likes         Like[]
+  favorites     Favorite[]
+  comments      Comment[]
+  reports       Report[]     @relation("ReporterReports")
+  handledReports Report[]    @relation("HandledReports")
+  sessions      Session[]
+  banRecords    BanRecord[]  @relation("UserBanned")
+  banActions    BanRecord[]  @relation("BanActions")
+  unbannedUsers BanRecord[]  @relation("BanUnactions")
+  followers     Follow[]     @relation("UserFollowers")
+  following     Follow[]     @relation("UserFollowing")
+  uploadRecords UploadRecord[]
+
+  @@map("users")
+}
+
+// ===== Follow =====
+
+model Follow {
+  followerId  String
+  followingId String
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+// ===== Arc (Story Arc) =====
+
+model Arc {
+  id         Int       @id @default(autoincrement())
+  name       String
+  nameJa     String
+  nameEn     String
+  season     String?
+  sortOrder  Int
+  synopsis   String?
+  coverImage String?
+  createdAt  DateTime  @default(now())
+
+  chapters   StoryChapter[]
+  characters CharacterArc[]
+  wallpapers Wallpaper[]
+
+  @@map("arcs")
+}
+
+// ===== Story Chapter =====
+
+model StoryChapter {
+  id            Int      @id @default(autoincrement())
+  arcId         Int
+  title         String
+  content       String
+  chapterNumber Int
+  isSpoiler     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  arc Arc @relation(fields: [arcId], references: [id], onDelete: Cascade)
+
+  @@map("story_chapters")
+}
+
+// ===== Character =====
+
+model Character {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameJa      String
+  nameEn      String
+  cv          String?
+  avatar      String
+  description String
+  weapon      String?
+  affiliation String?
+  createdAt   DateTime @default(now())
+
+  arcs        CharacterArc[]
+  wallpapers  Wallpaper[]
+
+  @@map("characters")
+}
+
+// ===== Character Arc (join table) =====
+
+model CharacterArc {
+  characterId Int
+  arcId       Int
+  role        String?
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  arc       Arc       @relation(fields: [arcId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, arcId])
+  @@map("character_arcs")
+}
+
+// ===== Wallpaper =====
+
+model Wallpaper {
+  id          Int      @id @default(autoincrement())
+  title       String
+  characterId Int?
+  arcId       Int?
+  imageUrl    String
+  resolution  String?
+  sourceUrl   String?
+  tags        String
+  createdAt   DateTime @default(now())
+
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  arc       Arc?       @relation(fields: [arcId], references: [id], onDelete: SetNull)
+
+  @@map("wallpapers")
+}
+
+// ===== News =====
+
+model News {
+  id          Int           @id @default(autoincrement())
+  title       String
+  content     String
+  category    String
+  coverImage  String?
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@map("news")
+}
+
+// ===== Work (User-created content) =====
+
+model Work {
+  id           String          @id @default(uuid())
+  authorId     String
+  type         String
+  title        String
+  description  String?
+  content      String?
+  coverImage   String?
+  tags         String
+  status       String          @default("DRAFT")
+  visibility   String          @default("VISIBLE")
+  rejectReason String?
+  viewCount    Int             @default(0)
+  likeCount    Int             @default(0)
+  favoriteCount Int            @default(0)
+  deletedAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  author       User            @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  images       WorkImage[]
+  likes        Like[]
+  favorites    Favorite[]
+  comments     Comment[]
+  novelChapters NovelChapter[]
+
+  @@map("works")
+}
+
+// ===== Work Image =====
+
+model WorkImage {
+  id         Int    @id @default(autoincrement())
+  workId     String
+  imageUrl   String
+  sortOrder  Int
+
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@map("work_images")
+}
+
+// ===== Novel Chapter =====
+
+model NovelChapter {
+  id            Int       @id @default(autoincrement())
+  workId        String
+  title         String
+  content       String
+  wordCount     Int       @default(0)
+  chapterNumber Int
+  publishedAt   DateTime?
+
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@map("novel_chapters")
+}
+
+// ===== Like =====
+
+model Like {
+  userId String
+  workId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, workId])
+  @@map("likes")
+}
+
+// ===== Favorite =====
+
+model Favorite {
+  userId String
+  workId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workId])
+  @@map("favorites")
+}
+
+// ===== Comment =====
+
+model Comment {
+  id        String    @id @default(uuid())
+  workId    String
+  authorId  String
+  content   String
+  parentId  String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  work      Work      @relation(fields: [workId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Restrict)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+// ===== Report =====
+
+model Report {
+  id          Int             @id @default(autoincrement())
+  reporterId  String
+  targetType  String
+  targetId    String
+  reason      String
+  description String?
+  status      String          @default("PENDING")
+  handledById String?
+  createdAt   DateTime        @default(now())
+  resolvedAt  DateTime?
+
+  reporter User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Restrict)
+  handledBy User?   @relation("HandledReports", fields: [handledById], references: [id], onDelete: SetNull)
+
+  @@map("reports")
+}
+
+// ===== Session (JWT rotation) =====
+
+model Session {
+  id          String    @id @default(uuid())
+  userId      String
+  currentJti  String
+  tokenFamily String
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ===== Ban Record =====
+
+model BanRecord {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  reason      String
+  bannedById  String
+  createdAt   DateTime  @default(now())
+  unbannedAt  DateTime?
+  unbannedById String?
+
+  user       User  @relation("UserBanned", fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy   User  @relation("BanActions", fields: [bannedById], references: [id], onDelete: Restrict)
+  unbannedBy User? @relation("BanUnactions", fields: [unbannedById], references: [id], onDelete: SetNull)
+
+  @@map("ban_records")
+}
+
+// ===== Upload Record =====
+
+model UploadRecord {
+  id               Int            @id @default(autoincrement())
+  userId           String
+  originalFilename String
+  filename         String
+  mimeType         String
+  size             Int
+  status           String         @default("UPLOADED")
+  url              String?
+  thumbnailUrl     String?
+  width            Int?
+  height           Int?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("upload_records")
+}

@@ -1,0 +1,51 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build output
+dist
+**/dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation
+*.md
+SETUP.md
+sao-blog-plan.md
+AGENTS.md
+CLAUDE.md
+
+# Docker (avoid recursive copies)
+docker-compose.dev.yml
+
+# Test files
+test-*
+create-database.js
+migrate.js
+
+# Prisma dev database
+packages/server/prisma/dev.db
+
+# Trellis / Claude config
+.claude
+.trellis
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

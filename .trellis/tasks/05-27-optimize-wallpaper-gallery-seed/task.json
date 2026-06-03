@@ -1,0 +1,30 @@
+{
+  "id": "05-27-optimize-wallpaper-gallery-seed",
+  "name": "05-27-optimize-wallpaper-gallery-seed",
+  "title": "Optimize Wallpaper Gallery Seed",
+  "description": "Replace current wallpaper seed data with 30-50 traceable SAO wallpaper entries.",
+  "status": "in_progress",
+  "dev_type": "feature",
+  "scope": "server",
+  "package": "@sao/server",
+  "priority": "P1",
+  "creator": "ysb",
+  "assignee": "ysb",
+  "createdAt": "2026-05-27",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": null,
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "packages/server/prisma/seed.ts",
+    "packages/web/src/pages/gallery/GalleryPage.vue",
+    "packages/web/images/wallpapers/"
+  ],
+  "notes": "Use project-docker-guard before and after changes. Prefer traceable image URLs and sourceUrl values.",
+  "meta": {}
+}
