@@ -4,7 +4,6 @@
 .cursor/
 .gemini/
 
-
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -13,10 +12,15 @@ node_modules/
 dist/
 *.tsbuildinfo
 deplay/
+build/
+
 # Environment variables
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.docker
 
 # Uploads
 uploads/
@@ -39,9 +43,15 @@ logs/
 
 # Prisma
 packages/server/prisma/migrations/
+prisma/migrations/
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
+packages/server/prisma/dev.db
 
 # Docker
 docker-compose.override.yml
+docker-compose.production.yml
 
 # Test coverage
 coverage/
@@ -55,3 +65,30 @@ coverage/
 # Large deployment files
 deploy/*.tar
 deploy/*.gz
+deploy/*.zip
+
+# Plan documents (internal use only)
+sao-blog-plan.md
+doc.md
+UX_REVIEW_*.md
+
+# Production deployment sensitive files
+DEPLOY_LINUX_VM.md
+DEPLOY_PREBUILT_IMAGES.md
+deploy/
+
+# Local tools
+tools/
+test-server.js
+create-database.js
+migrate.js
+
+# Trellis workspace (local development)
+.trellis/workspace/
+
+# OpenAI/Claude agent configs
+.opencode/
+.agents/
+
+# Git LFS (optional)
+.gitattributes
